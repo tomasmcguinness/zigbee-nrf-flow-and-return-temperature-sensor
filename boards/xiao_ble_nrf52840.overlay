@@ -1,0 +1,109 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Copyright (c) 2022 Nordic Semiconductor ASA
+ */
+
+/ {
+
+	// vbatt {
+	// 	compatible = "voltage-divider";
+	// 	io-channels = <&adc 2>;
+	// 	output-ohms = <510000>;
+	// 	full-ohms =  <1510000>;
+	// 	power-gpios = <&gpio0 14 0>;
+	// };
+
+	buttons {
+		compatible = "gpio-keys";
+		button0: button_0 {
+			gpios = <&gpio1 13 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+			label = "Push button switch 0";
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+
+	power {
+		compatible = "gpio-keys";
+		divider_power: divider_power {
+			gpios = <&gpio0 28 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+			label = "Divider Power";
+		};
+	};
+
+	gpio_custom {
+		compatible = "gpio-leds";
+		read_batt: read_batt {
+		  gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
+		  label = "READ BAT";
+		};
+	};
+
+	zephyr,user {
+		io-channels = <&adc 0>, <&adc 1>, <&adc 2>;
+	};
+
+	aliases {
+		sw0 = &button0;
+		readbatt = &read_batt;
+	};
+};
+
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_5";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN1>;
+		zephyr,resolution = <12>;
+		zephyr,oversampling = <8>;
+	};
+
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1_5";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN5>;
+		zephyr,resolution = <12>;
+		zephyr,oversampling = <8>;
+	};
+
+	channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN7>;
+		zephyr,resolution = <12>;
+		zephyr,oversampling = <8>;
+	};
+};
+
+&qspi {
+    status = "disabled";
+};
+
+&spi0 {
+	status = "disabled";
+};
+
+&spi1 {
+	status = "disabled";
+};
+
+&spi2 {
+	status = "disabled";
+};
+
+&spi3 {
+	status = "disabled";
+};
+
+&i2c1 {
+	status = "disabled";
+};

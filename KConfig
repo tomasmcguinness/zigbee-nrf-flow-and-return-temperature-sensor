@@ -1,0 +1,12 @@
+# /Kconfig
+# this is all you need!
+source "Kconfig.zephyr"
+
+menu "FART Sensor"
+
+config REFERENCE_VOLTAGE
+	int "The reference voltage"
+	range 3000 5000
+	default 0
+
+endmenu
