@@ -617,6 +617,8 @@ static uint16_t read_temperature(int i)
 	return value;
 }
 
+// This code comes from the Zephyr Battery sample.
+//
 uint8_t get_battery_percentage(unsigned int batt_mV, const struct battery_level_point *curve)
 {
 	const struct battery_level_point *pb = curve;
