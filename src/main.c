@@ -111,7 +111,7 @@ static struct zb_device_ctx dev_ctx;
 
 struct battery_level_point {
 	// Percentage at #lvl_mV.
-	uint16_t lvl_percentage;
+	uint8_t lvl_percentage;
 
 	// Voltage at #lvl_percentage remaining life. */
 	uint16_t lvl_mV;
@@ -131,8 +131,8 @@ static const struct battery_level_point levels[] = {
 	 * and 3.1 V.
 	 */
 
-	{10000, 3700},
-	{625, 3550},
+	{100, 3700},
+	{6, 3550},
 	{0, 3100},
 };
 
@@ -549,11 +549,19 @@ static void zcl_device_cb(zb_bufid_t bufid)
 	device_cb_param->status = RET_OK;
 }
 
-int16_t buf;
+int16_t temperature_buf;
 
-struct adc_sequence sequence = {
-	.buffer = &buf,
-	.buffer_size = sizeof(buf),
+struct adc_sequence temperature_sequence = {
+	.buffer = &temperature_buf,
+	.buffer_size = sizeof(temperature_buf),
+	.calibrate = true,
+};
+
+int16_t battery_buf;
+
+struct adc_sequence battery_sequence = {
+	.buffer = &battery_buf,
+	.buffer_size = sizeof(battery_buf),
 	.calibrate = true,
 };
 
@@ -568,7 +576,7 @@ static const float battery_divider_factor = 1510.0 / 510.0;
 
 static uint16_t read_temperature(int i)
 {
-	int err = adc_sequence_init_dt(&adc_channels[i], &sequence);
+	int err = adc_sequence_init_dt(&adc_channels[i], &temperature_sequence);
 
 	if (err < 0)
 	{
@@ -576,7 +584,7 @@ static uint16_t read_temperature(int i)
 		return -1;
 	}
 
-	err = adc_read(adc_channels[i].dev, &sequence);
+	err = adc_read(adc_channels[i].dev, &temperature_sequence);
 
 	if (err < 0)
 	{
@@ -584,7 +592,7 @@ static uint16_t read_temperature(int i)
 		return -1;
 	}
 
-	int32_t adc_reading = buf;
+	int32_t adc_reading = temperature_buf;
 
 	int32_t val_mv = (float)adc_reading * mv_per_lsb;
 
@@ -609,23 +617,25 @@ static uint16_t read_temperature(int i)
 	return value;
 }
 
-unsigned int get_battery_percentage(unsigned int batt_mV, const struct battery_level_point *curve)
+uint8_t get_battery_percentage(unsigned int batt_mV, const struct battery_level_point *curve)
 {
 	const struct battery_level_point *pb = curve;
 
 	if (batt_mV >= pb->lvl_mV)
 	{
-		/* Measured voltage above highest point, cap at maximum. */
+		LOG_DBG("mV is above maximum configured, so cap at maximum %d %%", pb->lvl_percentage);
 		return pb->lvl_percentage;
 	}
+	
 	/* Go down to the last point at or below the measured voltage. */
 	while ((pb->lvl_percentage > 0) && (batt_mV < pb->lvl_mV))
 	{
 		++pb;
 	}
+
 	if (batt_mV < pb->lvl_mV)
 	{
-		/* Below lowest point, cap at minimum */
+		LOG_DBG("mV is below minimum configured, so cap at minimum");
 		return pb->lvl_percentage;
 	}
 
@@ -637,7 +647,7 @@ unsigned int get_battery_percentage(unsigned int batt_mV, const struct battery_l
 
 static void read_battery()
 {
-	int err = adc_sequence_init_dt(&adc_channels[BATTERY_ADC_CHANNEL], &sequence);
+	int err = adc_sequence_init_dt(&adc_channels[BATTERY_ADC_CHANNEL], &battery_sequence);
 
 	if (err < 0)
 	{
@@ -645,7 +655,7 @@ static void read_battery()
 		return -1;
 	}
 
-	err = adc_read(adc_channels[BATTERY_ADC_CHANNEL].dev, &sequence);
+	err = adc_read(adc_channels[BATTERY_ADC_CHANNEL].dev, &battery_sequence);
 
 	if (err < 0)
 	{
@@ -653,20 +663,20 @@ static void read_battery()
 		return -1;
 	}
 
-	int32_t adc_reading = buf;
+	int16_t adc_reading = battery_buf;
 
-	int32_t batt_mV = (float)adc_reading * batt_mv_per_lsb;
+	int16_t batt_mV = (float)adc_reading * batt_mv_per_lsb;
 
 	batt_mV = batt_mV * battery_divider_factor;
 
-	zb_uint8_t batt_percentage = get_battery_percentage(batt_mV, levels);
+	uint8_t batt_percentage = get_battery_percentage(batt_mV, levels);
 
-	LOG_DBG("Battery: %d lvl; %d mV; %u %%", adc_reading, batt_mV, batt_percentage);
+	LOG_DBG("Battery: %d lvl; %d mV; %d %%", adc_reading, batt_mV, batt_percentage);
 
 	// Convert from a percentage to a Zigbee battery level!
-	// 200 = 100%, 100 = 50%
+	// 200 = 100%, 100 = 50% so multiple by 2.
 	//
-	zb_uint8_t zigbee_batt_percentage = batt_percentage / 50; 
+	zb_uint8_t zigbee_batt_percentage = batt_percentage * 2; 
 
 	zb_zcl_status_t status = zb_zcl_set_attr_val(FART_ENDPOINT,
 												  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
