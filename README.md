@@ -1,3 +1,9 @@
+# Zigbee F.A.R.T. Sensor (Flow and Return Temperature)
+
+A Zigbee Sensor designed to monitor flow and return temperatures. The sensor provides two temperature sensor probes in a single unit. It can be used to monitor a boiler's flow and return temperatures or the different between the tails of a radiator.
+
+Battery powered, this sensor should run for over a year on a coin battery or 10 years on a 2000mAh battery.
+
 ## Building 
 
 This code has been developed for the Seeed XIAO nrf52840, thought it should run on any nRF52840. 
