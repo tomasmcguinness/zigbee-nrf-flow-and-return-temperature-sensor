@@ -25,17 +25,17 @@
 
 	power {
 		compatible = "gpio-keys";
-		divider_power: divider_power {
+		temperature_divider_power: temperature_divider_power {
 			gpios = <&gpio0 28 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
-			label = "Divider Power";
+			label = "Temperature Divider Power";
 		};
 	};
 
 	gpio_custom {
 		compatible = "gpio-leds";
-		read_batt: read_batt {
+		battery_divider_sink: battery_divider_sink {
 		  gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
-		  label = "READ BAT";
+		  label = "Battery Divider Sink";
 		};
 	};
 
@@ -45,7 +45,6 @@
 
 	aliases {
 		sw0 = &button0;
-		readbatt = &read_batt;
 	};
 };
 

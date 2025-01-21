@@ -14,7 +14,6 @@ project("Zigbee application template")
 target_sources(app PRIVATE
   src/main.c
   src/flash.c
-  src/battery.c
 )
 
 target_include_directories(app PRIVATE include)

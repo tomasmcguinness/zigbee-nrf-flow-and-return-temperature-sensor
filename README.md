@@ -18,5 +18,21 @@ west flash
 
 There are three GPIOs required. One supplies power to the voltage divider. The other two are ADC pins, which read the temperature probes.
 
-## DK
-nrf52840dk/nrf52840
+## Zigbee ZCL
+
+
+## Battery Life
+
+I've invested a lot of time to try and ensure long battery life. I've written a few blog posts detailing the journey.
+
+
+
+# Setup
+
+Once powered up, you can add the device to your Zigbee network as you would any other.
+
+# Next Steps
+
+* [ ] Use reset button to reverse probes i.e. swap readings
+* [ ] Ensure reliability
+* [ ] Ensure battery life

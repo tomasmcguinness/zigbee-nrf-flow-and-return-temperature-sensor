@@ -28,11 +28,11 @@
 #include <ram_pwrdn.h>
 
 #include "flash.h"
-#include "battery.h"
 
 #define BLUE_LED_NODE DT_ALIAS(led2)
-#define DIVIDER_POWER_NODE DT_NODELABEL(divider_power)
+#define TEMPERATURE_DIVIDER_POWER_NODE DT_NODELABEL(temperature_divider_power)
 #define ACTION_BUTTON_NODE DT_ALIAS(sw0)
+#define BATTERY_DIVIDER_SINK_NODE DT_NODELABEL(battery_divider_sink)
 
 // The default minimum reporting for temperature is 30 seconds.
 //
@@ -40,7 +40,7 @@
 
 // The default minimum reporting for temperature is 1 hour.
 //
-#define RUN_READ_BATTERY_INTERVAL_SEC 5
+#define RUN_READ_BATTERY_INTERVAL_SEC 5 //3600
 
 #define ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER 100
 
@@ -73,7 +73,8 @@ static const struct adc_dt_spec adc_channels[];
 #define SERIESRESISTOR 10000
 
 static const struct gpio_dt_spec blue_led = GPIO_DT_SPEC_GET(BLUE_LED_NODE, gpios);
-static const struct gpio_dt_spec divider_power = GPIO_DT_SPEC_GET(DIVIDER_POWER_NODE, gpios);
+static const struct gpio_dt_spec temperatures_divider_power = GPIO_DT_SPEC_GET(TEMPERATURE_DIVIDER_POWER_NODE, gpios);
+static const struct gpio_dt_spec battery_divider_sink = GPIO_DT_SPEC_GET(BATTERY_DIVIDER_SINK_NODE, gpios);
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_DBG);
 
@@ -108,6 +109,14 @@ struct zb_device_ctx
 
 static struct zb_device_ctx dev_ctx;
 
+struct battery_level_point {
+	// Percentage at #lvl_mV.
+	uint16_t lvl_percentage;
+
+	// Voltage at #lvl_percentage remaining life. */
+	uint16_t lvl_mV;
+};
+
 /** A discharge curve specific to the power source. */
 static const struct battery_level_point levels[] = {
 	/* "Curve" here eyeballed from captured data for the [Adafruit
@@ -122,7 +131,7 @@ static const struct battery_level_point levels[] = {
 	 * and 3.1 V.
 	 */
 
-	{10000, 3950},
+	{10000, 3700},
 	{625, 3550},
 	{0, 3100},
 };
@@ -141,7 +150,7 @@ static void identify_cb(zb_bufid_t bufid);
 static void button_handler(uint32_t button_state, uint32_t has_changed);
 static void slowly_toggle_identify_led(zb_bufid_t bufid);
 static void read_battery();
-static void read_probes();
+static void read_temperatures();
 
 ZB_ZCL_DECLARE_IDENTIFY_ATTRIB_LIST(
 	identify_attr_list,
@@ -242,14 +251,6 @@ int main(void)
 
 	configure_gpio();
 
-	rc = battery_measure_enable();
-
-	if (rc != 0)
-	{
-		LOG_ERR("Failed initialize battery measurement: %d", rc);
-		return 0;
-	}
-
 	// WTF does "1" represent? It's the button's "state" value. The mask?
 	//
 	register_factory_reset_button(4);
@@ -318,8 +319,8 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 
 	user_input_indicate();
 
-	// Maybe turn the light green
-	// or indicate the active probe?? Red mean probe 1 is flow, green means probe 2 is flow?
+	// Maybe turn the light green or indicate the active probe?? 
+	// Red mean probe 1 is flow, green means probe 2 is flow?
 }
 
 static void app_clusters_attr_init(void)
@@ -394,18 +395,28 @@ static void configure_gpio(void)
 		return;
 	}
 
-	if (!gpio_is_ready_dt(&divider_power))
+	if (!gpio_is_ready_dt(&temperatures_divider_power))
 	{
 		LOG_ERR("Cannot configure Divider Power switch (err: %d)", err);
 		return;
 	}
 
-	err = gpio_pin_configure_dt(&divider_power, GPIO_OUTPUT_INACTIVE);
+	err = gpio_pin_configure_dt(&temperatures_divider_power, GPIO_OUTPUT_INACTIVE);
 	if (err != 0)
 	{
 		LOG_ERR("Configuring Divider Power pin failed (err: %d)", err);
 		return;
 	}
+
+	err = gpio_pin_configure_dt(&battery_divider_sink, GPIO_OUTPUT_ACTIVE);
+
+	if (err != 0)
+	{
+		LOG_ERR("Configuring Battery Divider Sink pin failed (err: %d)", err);
+		return;
+	}
+
+    gpio_pin_set_dt(&battery_divider_sink, 1);
 }
 
 /* Rapidly blink an LED */
@@ -546,12 +557,14 @@ struct adc_sequence sequence = {
 	.calibrate = true,
 };
 
-// The ADC reads to a max of 3v and is configured with 4096 levels.
+// The ADC has 4096 levels. The reference volage depends on the gain
 //
-float mv_per_lsb = 3000.0F / 4096.0F; // GAIN 0.6 / (1/5)
-float batt_mv_per_lsb = 3600.0F / 4096.0F; // GAIN 0.6 / (1/6)
+float mv_per_lsb = 3000.0F / 4096.0F; // 0.6 / (1/5) = 3
+float batt_mv_per_lsb = 3600.0F / 4096.0F; // 0.6 / (1/6) = 3.6
 
-static const float               calib_factor = 1510.0 / 510.0;
+// The battery voltage divider is 1mOhm vs 510kOhm
+//
+static const float battery_divider_factor = 1510.0 / 510.0;
 
 static uint16_t read_temperature(int i)
 {
@@ -596,10 +609,34 @@ static uint16_t read_temperature(int i)
 	return value;
 }
 
+unsigned int get_battery_percentage(unsigned int batt_mV, const struct battery_level_point *curve)
+{
+	const struct battery_level_point *pb = curve;
+
+	if (batt_mV >= pb->lvl_mV)
+	{
+		/* Measured voltage above highest point, cap at maximum. */
+		return pb->lvl_percentage;
+	}
+	/* Go down to the last point at or below the measured voltage. */
+	while ((pb->lvl_percentage > 0) && (batt_mV < pb->lvl_mV))
+	{
+		++pb;
+	}
+	if (batt_mV < pb->lvl_mV)
+	{
+		/* Below lowest point, cap at minimum */
+		return pb->lvl_percentage;
+	}
+
+	/* Linear interpolation between below and above points. */
+	const struct battery_level_point *pa = pb - 1;
+
+	return pb->lvl_percentage + ((pa->lvl_percentage - pb->lvl_percentage) * (batt_mV - pb->lvl_mV) / (pa->lvl_mV - pb->lvl_mV));
+}
+
 static void read_battery()
 {
-	// Channel 2 is the battery ADC.
-	//
 	int err = adc_sequence_init_dt(&adc_channels[BATTERY_ADC_CHANNEL], &sequence);
 
 	if (err < 0)
@@ -620,17 +657,22 @@ static void read_battery()
 
 	int32_t batt_mV = (float)adc_reading * batt_mv_per_lsb;
 
-	batt_mV = batt_mV * calib_factor;
+	batt_mV = batt_mV * battery_divider_factor;
 
-	zb_uint8_t batt_pptt = battery_level_pptt(batt_mV, levels);
+	zb_uint8_t batt_percentage = get_battery_percentage(batt_mV, levels);
 
-	LOG_DBG("Battery: %d; %d mV; %u pptt", adc_reading, batt_mV, batt_pptt);
+	LOG_DBG("Battery: %d lvl; %d mV; %u %%", adc_reading, batt_mV, batt_percentage);
+
+	// Convert from a percentage to a Zigbee battery level!
+	// 200 = 100%, 100 = 50%
+	//
+	zb_uint8_t zigbee_batt_percentage = batt_percentage / 50; 
 
 	zb_zcl_status_t status = zb_zcl_set_attr_val(FART_ENDPOINT,
 												  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
 												  ZB_ZCL_CLUSTER_SERVER_ROLE,
 												  ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
-												  &batt_pptt,
+												  &zigbee_batt_percentage,
 												  ZB_FALSE);
 
 	if (status != ZB_ZCL_STATUS_SUCCESS)
@@ -651,11 +693,11 @@ static void read_battery_loop(zb_uint8_t arg)
 	}
 }
 
-static void read_probes()
+static void read_temperatures()
 {
 	// Switch on the power pin.
 	//
-	gpio_pin_set_dt(&divider_power, 1);
+	gpio_pin_set_dt(&temperatures_divider_power, 1);
 
 	// Let the voltage stabalise??.
 	//
@@ -666,7 +708,7 @@ static void read_probes()
 
 	// Switch off the power pin.
 	//
-	gpio_pin_set_dt(&divider_power, 0);
+	gpio_pin_set_dt(&temperatures_divider_power, 0);
 
 	int16_t temperature_attribute_1 = (int16_t)(temperature_1 * ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER);
 
@@ -697,13 +739,13 @@ static void read_probes()
 	}
 }
 
-void read_probes_loop()
+void read_temperatures_loop()
 {
 	while (1)
 	{
 		if (ZB_JOINED())
 		{
-			read_probes();
+			read_temperatures();
 		}
 
 		k_sleep(K_MSEC(RUN_READ_PROBES_INTERVAL_SEC * 1000));
@@ -716,7 +758,7 @@ void read_probes_loop()
 // Start the probes thread. This means the readings won't be taken straight away
 //
 //
-K_THREAD_DEFINE(read_probes_id, STACKSIZE, read_probes_loop, NULL, NULL, NULL, PRIORITY, 0, 0);
+K_THREAD_DEFINE(read_probes_id, STACKSIZE, read_temperatures_loop, NULL, NULL, NULL, PRIORITY, 0, 0);
 
 // TODO Start the battery monitor thread
 //
