@@ -42,8 +42,15 @@ west flash
 
 ## GPIOs
 
-There are three GPIOs required. One supplies power to the voltage divider. The other two are ADC pins, which read the temperature probes.
+There several GPIOs configured. These have been picked for the Seeed XIAO nRF52840 board.
 
+![image](https://github.com/user-attachments/assets/3c12b195-e805-4862-b072-d9325f9bd02d)
+
+P0.03 is the ADC (AIN1) pin for Probe 1
+P0.28 is the ADC (AIN5) pin for Probe 2 
+P0.28 providers power for the voltage dividers connected to the NTC temperature probes
+
+P1.13 is the reset pin. Apply high for 10 seconds to reset the Zigbee configuration.
 
 
 ## Zigbee ZCL
