@@ -16,15 +16,16 @@ west build -b xiao_ble -p
 
 ## Flashing
 
-I flash my XIAO Boards using a J-Link programmer, but if you don't have one, you should be able to deploy the firmware using the Adafruit UF2 Bootloader.
+The XIAO board can be flashed using two methods. The first is done using the factory installed bootloader. The second is done using a J-Link programmer. I have a J-Link programmer, so that's the method I've been using.
 
 ### UF2
 
-* I should point out that I have had no success with this method yet! *
+[!IMPORTANT]
+Whilst this is supported, I have tried it without success! I want to make this project accessible to those without a J-Link, so I will dedicate time to it.
 
 First, connect the board via USB to your computer. Next, double click the Reset button. A new USB drive should appear.
 
-The UF2 firmware should be located here:
+The compilation process will generate a UF2 firmware file and it will be be located here:
 
 ```
 zigbee-nrf-flow-and-return-temperature-sensor\build\zigbee-nrf-flow-and-return-temperature-sensor\zephyr\zephyr.uf2
@@ -34,7 +35,7 @@ Just copy and paste this file onto the USB drive and the application *should* st
 
 ### J-Link
 
-If you have a J-Link programmer, you can connect the board and run this command.
+If you have a J-Link programmer, connect the board and run this command.
 
 ```
 west flash
@@ -72,6 +73,10 @@ https://tomasmcguinness.com/2024/12/19/reducing-power-consumption-in-my-nrf52840
 # Setup
 
 Once powered up, you can add the device to your Zigbee network as you would any other.
+
+# PCB
+
+I have designed a PCB for this code, but there are some flaws in it, so I'm not ready to make it public just yet!
 
 # Next Steps
 
