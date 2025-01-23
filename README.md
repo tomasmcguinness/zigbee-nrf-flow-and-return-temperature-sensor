@@ -76,7 +76,7 @@ Once powered up, you can add the device to your Zigbee network as you would any 
 
 # PCB
 
-I have designed a PCB for this code, but there are some flaws in it, so I'm not ready to make it public just yet!
+I have designed a PCB for this code, but there are some flaws in it, so I'm not ready to make it public just yet! If you are interested in buying a PCB, let me know. If there are enough orders, the price per board can be quite low.
 
 # Next Steps
 
