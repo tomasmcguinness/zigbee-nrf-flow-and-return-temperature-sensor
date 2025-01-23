@@ -40,7 +40,7 @@
 
 // The default minimum reporting for temperature is 1 hour.
 //
-#define RUN_READ_BATTERY_INTERVAL_SEC 5 //3600
+#define RUN_READ_BATTERY_INTERVAL_SEC 5 // 3600
 
 #define ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER 100
 
@@ -109,7 +109,8 @@ struct zb_device_ctx
 
 static struct zb_device_ctx dev_ctx;
 
-struct battery_level_point {
+struct battery_level_point
+{
 	// Percentage at #lvl_mV.
 	uint8_t lvl_percentage;
 
@@ -232,9 +233,34 @@ static int disable_ds_1(const struct device *dev)
 
 SYS_INIT(disable_ds_1, PRE_KERNEL_2, 0);
 
-//---------------------------------------------------------------------------------------------
-// main
-//
+//zigbee_state_e zigbee_state = ZIGBEE_STEERING;
+
+static void app_loop(zb_bufid_t bufid)
+{
+	int32_t battery_mv = 0;
+	
+	LOG_INF("APP_LOOP");
+
+	//if (zigbee_state == ZIGBEE_JOINED)
+	if(ZB_JOINED())
+	{
+		LOG_INF("Updating sensor values");
+
+		read_temperatures();
+		read_battery();
+
+		ZB_SCHEDULE_APP_ALARM(app_loop, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(RUN_READ_PROBES_INTERVAL_SEC * 1000));
+	}
+	// else if (zigbee_state == ZIGBEE_ERROR)
+	// {
+	// 	// Do not reschedule and wait for a factory reset
+	// 	return;
+	// }
+	else
+	{
+		ZB_SCHEDULE_APP_ALARM(app_loop, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
+	}
+}
 
 int main(void)
 {
@@ -243,7 +269,7 @@ int main(void)
 	int rc;
 
 	// Taken from https://forum.seeedstudio.com/t/low-power-with-xiao-nrf52840-on-zephyr-rtos/270491/5
-	// This turns off the QSPI flash.
+	// This turns off the QSPI flash and reduces power consumption.
 	//
 	da_flash_init();
 	da_flash_command(0xB9);
@@ -298,9 +324,13 @@ int main(void)
 
 	zigbee_enable();
 
+	// Start the app loop.
+	//
+	ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(0)); 
+
 	// Start the LED slowly blinking
 	//
-	// ZB_SCHEDULE_APP_CALLBACK(slowly_toggle_identify_led, ZB_ALARM_ANY_PARAM);
+	//ZB_SCHEDULE_APP_CALLBACK(slowly_toggle_identify_led, ZB_ALARM_ANY_PARAM);
 
 	// Zigbee will take it from here. Put this thread to sleep forever
 	//
@@ -319,7 +349,7 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 
 	user_input_indicate();
 
-	// Maybe turn the light green or indicate the active probe?? 
+	// Maybe turn the light green or indicate the active probe??
 	// Red mean probe 1 is flow, green means probe 2 is flow?
 }
 
@@ -416,7 +446,7 @@ static void configure_gpio(void)
 		return;
 	}
 
-    gpio_pin_set_dt(&battery_divider_sink, 1);
+	gpio_pin_set_dt(&battery_divider_sink, 1);
 }
 
 /* Rapidly blink an LED */
@@ -567,7 +597,7 @@ struct adc_sequence battery_sequence = {
 
 // The ADC has 4096 levels. The reference volage depends on the gain
 //
-float mv_per_lsb = 3000.0F / 4096.0F; // 0.6 / (1/5) = 3
+float mv_per_lsb = 3000.0F / 4096.0F;	   // 0.6 / (1/5) = 3
 float batt_mv_per_lsb = 3600.0F / 4096.0F; // 0.6 / (1/6) = 3.6
 
 // The battery voltage divider is 1mOhm vs 510kOhm
@@ -628,7 +658,7 @@ uint8_t get_battery_percentage(unsigned int batt_mV, const struct battery_level_
 		LOG_DBG("mV is above maximum configured, so cap at maximum %d %%", pb->lvl_percentage);
 		return pb->lvl_percentage;
 	}
-	
+
 	/* Go down to the last point at or below the measured voltage. */
 	while ((pb->lvl_percentage > 0) && (batt_mV < pb->lvl_mV))
 	{
@@ -678,30 +708,18 @@ static void read_battery()
 	// Convert from a percentage to a Zigbee battery level!
 	// 200 = 100%, 100 = 50% so multiple by 2.
 	//
-	zb_uint8_t zigbee_batt_percentage = batt_percentage * 2; 
+	zb_uint8_t zigbee_batt_percentage = batt_percentage * 2;
 
 	zb_zcl_status_t status = zb_zcl_set_attr_val(FART_ENDPOINT,
-												  ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
-												  ZB_ZCL_CLUSTER_SERVER_ROLE,
-												  ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
-												  &zigbee_batt_percentage,
-												  ZB_FALSE);
+												 ZB_ZCL_CLUSTER_ID_POWER_CONFIG,
+												 ZB_ZCL_CLUSTER_SERVER_ROLE,
+												 ZB_ZCL_ATTR_POWER_CONFIG_BATTERY_PERCENTAGE_REMAINING_ID,
+												 &zigbee_batt_percentage,
+												 ZB_FALSE);
 
 	if (status != ZB_ZCL_STATUS_SUCCESS)
 	{
 		LOG_ERR("Failed to write to Battery Percentage Remaining Attribute");
-	}
-}
-
-static void read_battery_loop(zb_uint8_t arg)
-{
-	LOG_DBG("Reading battery & updating power cluster...");
-
-	while (1)
-	{
-		read_battery();
-
-		k_sleep(K_MSEC(RUN_READ_BATTERY_INTERVAL_SEC * 1000));
 	}
 }
 
@@ -750,28 +768,3 @@ static void read_temperatures()
 		LOG_ERR("Failed to write to Endpoint 2 Attribute");
 	}
 }
-
-void read_temperatures_loop()
-{
-	while (1)
-	{
-		if (ZB_JOINED())
-		{
-			read_temperatures();
-		}
-
-		k_sleep(K_MSEC(RUN_READ_PROBES_INTERVAL_SEC * 1000));
-	}
-}
-
-#define STACKSIZE 1024
-#define PRIORITY 7
-
-// Start the probes thread. This means the readings won't be taken straight away
-//
-//
-K_THREAD_DEFINE(read_probes_id, STACKSIZE, read_temperatures_loop, NULL, NULL, NULL, PRIORITY, 0, 0);
-
-// TODO Start the battery monitor thread
-//
-K_THREAD_DEFINE(read_battery_id, STACKSIZE, read_battery_loop, NULL, NULL, NULL, PRIORITY, 0, 0);
