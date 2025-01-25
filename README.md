@@ -2,11 +2,26 @@
 
 A Zigbee Sensor designed to monitor flow and return temperatures. The sensor provides two temperature sensor probes in a single unit. It can be used to monitor a boiler's flow and return temperatures or the different between the tails of a radiator.
 
-Battery powered, this sensor should run for over a year on a coin battery or 10 years on a 2000mAh battery.
+It uses two NTC Thermistors, which can be attached to the flow and return pipes on whatever you wish to measure; radiator tails, boiler flow and return, hot water cylinder. 
+
+Battery powered, this sensor should run for over about a year and a half on a coin battery or around ten years on a 2000mAh battery.
+
+## Parts
+
+* 1 x Seeed XIAO nRF52840
+* 2 x 10kΩ 0.1% resistors
+* 2 x NTC Thermistors (I use these TT0P-10KC3-T105-1500)
+* 1 x push button
+
+## Wiring
+
+In the diagram below, you would replace the two 10kΩ thermistor that are not on the breadboard with the the probes
+
+![image](https://github.com/user-attachments/assets/626b1a7a-7316-4bad-9e54-60a14366c22f)
 
 ## Compiling 
 
-This code has been developed using NCS (nRF Connect Software), with pin outs and battery reading chosen for the Seeed XIAO nrf52840. It should run on any nRF52840 with some tweaking. 
+This code has been developed using NCS (nRF Connect Software), with pin outs and battery reading chosen for the Seeed XIAO nrf52840. It should run on any nRF52840 with some tweaking. There is an overlay included for the nRF52840DK, which I use for development.
 
 To compile, run the following command in an `nRF Connect` terminal. The pristine build (-p) flag isn't always necessary.
 
@@ -45,17 +60,31 @@ west flash
 
 Once you have flashed the nRF52840 and powered it up, it will enter pairing mode. You can then add it to your Zigbee network using your usual method.
 
+# NTC
+
+My Zigbee sensor uses the TT0P-10KC3-T105-1500 probes as mentioned. These have a nominal resistance of 10kΩ @ 25°C and have a beta value of 3977.
+
+```
+#define THERMISTORNOMINAL 10000
+#define TEMPERATURENOMINAL 25
+#define BCOEFFICIENT 3977
+#define SERIESRESISTOR 10000
+```
+
+I will make these part of the configuration, but for now you will need to change them in code.
+
 # GPIOs
 
-There several GPIOs configured. These have been picked for the Seeed XIAO nRF52840 board.
+There several GPIOs configured by this project. These have been picked for the Seeed XIAO nRF52840 board.
 
 ![image](https://github.com/user-attachments/assets/3c12b195-e805-4862-b072-d9325f9bd02d)
 
-P0.03 is the ADC (AIN1) pin for Probe 1
-P0.28 is the ADC (AIN5) pin for Probe 2 
-P0.28 providers power for the voltage dividers connected to the NTC temperature probes
-
-P1.13 is the reset pin. Apply high for 10 seconds to reset the Zigbee configuration.
+| GPIO  | Usage |
+| ------------- | ------------- |
+| P0.03 | ADC (AIN1) pin for Probe 1  |
+| P0.29 | ADC (AIN5) pin for Probe 2  |
+| P0.28 | Power for the voltage dividers connected to the NTC temperature probes |
+| P1.13 | Reset pin. Apply high for 10 seconds to reset the Zigbee configuration | 
 
 # Zigbee ZCL
 
