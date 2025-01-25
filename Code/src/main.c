@@ -34,13 +34,7 @@
 #define ACTION_BUTTON_NODE DT_ALIAS(sw0)
 #define BATTERY_DIVIDER_SINK_NODE DT_NODELABEL(battery_divider_sink)
 
-// The default minimum reporting for temperature is 30 seconds.
-//
-#define RUN_READ_PROBES_INTERVAL_SEC 30
-
-// The default minimum reporting for temperature is 1 hour.
-//
-#define RUN_READ_BATTERY_INTERVAL_SEC 5 // 3600
+#define APP_LOOP_INTERVAL_SEC 30
 
 #define ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER 100
 
@@ -233,15 +227,12 @@ static int disable_ds_1(const struct device *dev)
 
 SYS_INIT(disable_ds_1, PRE_KERNEL_2, 0);
 
-//zigbee_state_e zigbee_state = ZIGBEE_STEERING;
-
 static void app_loop(zb_bufid_t bufid)
 {
 	int32_t battery_mv = 0;
 	
 	LOG_INF("APP_LOOP");
 
-	//if (zigbee_state == ZIGBEE_JOINED)
 	if(ZB_JOINED())
 	{
 		LOG_INF("Updating sensor values");
@@ -249,13 +240,8 @@ static void app_loop(zb_bufid_t bufid)
 		read_temperatures();
 		read_battery();
 
-		ZB_SCHEDULE_APP_ALARM(app_loop, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(RUN_READ_PROBES_INTERVAL_SEC * 1000));
+		ZB_SCHEDULE_APP_ALARM(app_loop, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(APP_LOOP_INTERVAL_SEC * 1000));
 	}
-	// else if (zigbee_state == ZIGBEE_ERROR)
-	// {
-	// 	// Do not reschedule and wait for a factory reset
-	// 	return;
-	// }
 	else
 	{
 		gpio_pin_toggle_dt(&blue_led);
