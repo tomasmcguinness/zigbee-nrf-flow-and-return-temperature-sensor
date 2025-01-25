@@ -20,7 +20,6 @@ The XIAO board can be flashed using two methods. The first is done using the fac
 
 ### UF2
 
-[!IMPORTANT]
 Whilst this is supported, I have tried it without success! I want to make this project accessible to those without a J-Link, so I will dedicate time to it.
 
 First, connect the board via USB to your computer. Next, double click the Reset button. A new USB drive should appear.
@@ -56,13 +55,16 @@ P1.13 is the reset pin. Apply high for 10 seconds to reset the Zigbee configurat
 
 ## Zigbee ZCL
 
-In order to maintain compatability, this sensor uses standard ZCL clusters.
+In order to maintain compatability, this sensor uses standard ZCL clusters rather.
 
 There are three Endpoints 1, 5 & 7
 
 Endpoint 1 contains the Basic cluster, the Identify Cluster and the Power Configuration Cluster.
 Endpoint 5 contains a Temperature Measurement Cluster
 Endpoint 7 contains a Temperature Measurement Cluster
+
+## Home Assistant
+
 
 ## Battery Life
 
@@ -72,11 +74,13 @@ https://tomasmcguinness.com/2024/12/19/reducing-power-consumption-in-my-nrf52840
 
 # Setup
 
-Once powered up, you can add the device to your Zigbee network as you would any other.
+Once powered up, you can add the device to your Zigbee network as you would any other Zigbee device.
 
 # PCB
 
-I have designed a PCB for this code, but there are some flaws in it, so I'm not ready to make it public just yet! If you are interested in buying a PCB, let me know. If there are enough orders, the price per board can be quite low.
+Using KiCAD, I have designed a PCB for this code. However, there are some flaws in it. I have included the first version for reference.
+
+If you are interested in buying a PCB, let me know. If there are enough orders, the price per board can be quite low.
 
 # Next Steps
 
