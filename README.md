@@ -6,6 +6,9 @@ It uses two NTC Thermistors, which can be attached to the flow and return pipes 
 
 Battery powered, this sensor should run for over about a year and a half on a coin battery or around ten years on a 2000mAh battery.
 
+> [!IMPORTANT] 
+> This is still a work in progress. I have included a short list of items at the end of this README
+
 ## Parts
 
 * 1 x Seeed XIAO nRF52840
@@ -145,5 +148,5 @@ If you are interested in buying a PCB, do let me know. If there is enough intere
 
 * [ ] Fix reset button PCB traces
 * [ ] Use reset button to reverse probes i.e. swap readings
-* [ ] Ensure reliability
+* [ ] Confirm long-term reliability
 * [ ] Ensure battery life
