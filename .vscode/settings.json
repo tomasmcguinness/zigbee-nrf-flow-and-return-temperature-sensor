@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "zb_zcl_temp_measurement_addons.h": "c",
+        "zboss_api.h": "c",
+        "zigbee_app_utils.h": "c",
+        "type_traits": "c"
+    },
+    "nrf-connect.topdir": "${nrf-connect.sdk:2.8.0}",
+    "nrf-connect.debugging.bindings": {
+        "${workspaceFolder}/build/Zigbee": "Launch Zigbee"
+    }
+}

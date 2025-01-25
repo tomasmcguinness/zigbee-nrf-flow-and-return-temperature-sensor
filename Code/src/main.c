@@ -149,7 +149,7 @@ static void app_clusters_attr_init(void);
 static void start_identifying(zb_bufid_t bufid);
 static void identify_cb(zb_bufid_t bufid);
 static void button_handler(uint32_t button_state, uint32_t has_changed);
-static void slowly_toggle_identify_led(zb_bufid_t bufid);
+static void toggle_identify_led(zb_bufid_t bufid);
 static void read_battery();
 static void read_temperatures();
 
@@ -258,6 +258,7 @@ static void app_loop(zb_bufid_t bufid)
 	// }
 	else
 	{
+		gpio_pin_toggle_dt(&blue_led);
 		ZB_SCHEDULE_APP_ALARM(app_loop, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
 	}
 }
@@ -449,18 +450,10 @@ static void configure_gpio(void)
 	gpio_pin_set_dt(&battery_divider_sink, 1);
 }
 
-/* Rapidly blink an LED */
 static void toggle_identify_led(zb_bufid_t bufid)
 {
 	gpio_pin_toggle_dt(&blue_led);
 	ZB_SCHEDULE_APP_ALARM(toggle_identify_led, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(100));
-}
-
-/* Slowly blink an LED */
-static void slowly_toggle_identify_led(zb_bufid_t bufid)
-{
-	gpio_pin_toggle_dt(&blue_led);
-	ZB_SCHEDULE_APP_ALARM(slowly_toggle_identify_led, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
 }
 
 /* Invoked by ZBOSS. This will be called again with no buffer to turn off the identify mode */
@@ -539,10 +532,6 @@ void zboss_signal_handler(zb_uint8_t param)
 	case ZB_BDB_SIGNAL_DEVICE_REBOOT:
 	{
 		LOG_INF("Device starting or rebooting");
-
-		// All connected!
-		//
-		// ZB_SCHEDULE_APP_ALARM_CANCEL(slowly_toggle_identify_led, ZB_ALARM_ANY_PARAM);
 
 		// Ensure the LED is turned off
 		//
