@@ -229,6 +229,10 @@ SYS_INIT(disable_ds_1, PRE_KERNEL_2, 0);
 
 static void app_loop(zb_bufid_t bufid)
 {
+	ZVUNUSED(bufid);
+
+	ZB_SCHEDULE_APP_ALARM_CANCEL(app_loop, ZB_ALARM_ANY_PARAM);
+
 	int32_t battery_mv = 0;
 	
 	LOG_INF("APP_LOOP");
@@ -240,12 +244,12 @@ static void app_loop(zb_bufid_t bufid)
 		read_temperatures();
 		read_battery();
 
-		ZB_SCHEDULE_APP_ALARM(app_loop, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(APP_LOOP_INTERVAL_SEC * 1000));
+		ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(APP_LOOP_INTERVAL_SEC * 1000));
 	}
 	else
 	{
 		gpio_pin_toggle_dt(&blue_led);
-		ZB_SCHEDULE_APP_ALARM(app_loop, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
+		ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
 	}
 }
 
@@ -314,10 +318,6 @@ int main(void)
 	// Start the app loop.
 	//
 	ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(0)); 
-
-	// Start the LED slowly blinking
-	//
-	//ZB_SCHEDULE_APP_CALLBACK(slowly_toggle_identify_led, ZB_ALARM_ANY_PARAM);
 
 	// Zigbee will take it from here. Put this thread to sleep forever
 	//
@@ -522,6 +522,10 @@ void zboss_signal_handler(zb_uint8_t param)
 		// Ensure the LED is turned off
 		//
 		gpio_pin_set_dt(&blue_led, 0);
+
+		// Call the app loop
+		//
+		ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(APP_LOOP_INTERVAL_SEC * 1000));	
 	}
 	break;
 	case ZB_DEVICE_LEFT:
@@ -530,6 +534,7 @@ void zboss_signal_handler(zb_uint8_t param)
 
 		// We have been cut loose. Blink the light
 		//
+
 		// ZB_SCHEDULE_APP_CALLBACK(slowly_toggle_identify_led, ZB_ALARM_ANY_PARAM);
 	}
 	break;
