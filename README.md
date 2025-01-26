@@ -18,7 +18,7 @@ Battery powered, this sensor should run for over about a year and a half on a co
 
 ## Wiring
 
-In the diagram below, you would replace the two 10kΩ thermistor that are not on the breadboard with the the probes
+In the diagram below, you would replace the two 10kΩ thermistor that are not on the breadboard with the actual probes
 
 ![image](https://github.com/user-attachments/assets/626b1a7a-7316-4bad-9e54-60a14366c22f)
 
