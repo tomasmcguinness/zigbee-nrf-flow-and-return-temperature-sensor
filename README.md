@@ -63,9 +63,9 @@ west flash
 
 Once you have flashed the nRF52840 and powered it up, it will enter pairing mode. You can then add it to your Zigbee network using your usual method.
 
-# NTC
+# NTC Thermistors
 
-My Zigbee sensor uses the TT0P-10KC3-T105-1500 probes as mentioned. These have a nominal resistance of 10kΩ @ 25°C and have a beta value of 3977.
+My Zigbee sensor was build with the TT0P-10KC3-T105-1500 probes, as I have already mentioned. These have a nominal resistance of 10kΩ @ 25°C and have a beta value of 3977. The relevant definitions in the code are here.
 
 ```
 #define THERMISTORNOMINAL 10000
@@ -74,7 +74,8 @@ My Zigbee sensor uses the TT0P-10KC3-T105-1500 probes as mentioned. These have a
 #define SERIESRESISTOR 10000
 ```
 
-I will make these part of the configuration, but for now you will need to change them in code.
+> [!NOTE] 
+> If you want to use a different thermistor, you can change these values. I plan on making these configurable via the project, but for now you will need to change them directly in code.
 
 # GPIOs
 
