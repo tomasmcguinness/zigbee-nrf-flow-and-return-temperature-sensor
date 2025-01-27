@@ -35,6 +35,7 @@
 #define BATTERY_DIVIDER_SINK_NODE DT_NODELABEL(battery_divider_sink)
 
 #define APP_LOOP_INTERVAL_SEC 30
+#define IDENTIFY_LED_BLINK_MSEC 1000
 
 #define ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER 100
 
@@ -138,14 +139,12 @@ static const struct battery_level_point levels[] = {
 void zboss_signal_handler(zb_bufid_t bufid);
 static void zcl_device_cb(zb_bufid_t bufid);
 static void configure_gpio(void);
-static void start_identifying(zb_bufid_t bufid);
 static void app_clusters_attr_init(void);
-static void start_identifying(zb_bufid_t bufid);
 static void identify_cb(zb_bufid_t bufid);
 static void button_handler(uint32_t button_state, uint32_t has_changed);
 static void toggle_identify_led(zb_bufid_t bufid);
-static void read_battery();
-static void read_temperatures();
+static int read_battery();
+static int read_temperatures();
 
 ZB_ZCL_DECLARE_IDENTIFY_ATTRIB_LIST(
 	identify_attr_list,
@@ -233,23 +232,33 @@ static void app_loop(zb_bufid_t bufid)
 
 	ZB_SCHEDULE_APP_ALARM_CANCEL(app_loop, ZB_ALARM_ANY_PARAM);
 
-	int32_t battery_mv = 0;
-	
 	LOG_INF("APP_LOOP");
 
-	if(ZB_JOINED())
+	int rc;
+
+	if (ZB_JOINED())
 	{
 		LOG_INF("Updating sensor values");
 
-		read_temperatures();
-		read_battery();
+		rc = read_temperatures();
+		rc = read_battery();
 
-		ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(APP_LOOP_INTERVAL_SEC * 1000));
+		rc = ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(APP_LOOP_INTERVAL_SEC * 1000));
 	}
 	else
 	{
-		gpio_pin_toggle_dt(&blue_led);
-		ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
+		LOG_INF("Waiting to join network");
+
+		// Toggle the LED. This will cause it to blink on & every every one second.
+		//
+		rc = gpio_pin_toggle_dt(&blue_led);
+
+		if(rc != 0) 
+		{
+			LOG_ERR("Failed to toggle identify LED");
+		}
+
+		rc = ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
 	}
 }
 
@@ -317,7 +326,7 @@ int main(void)
 
 	// Start the app loop.
 	//
-	ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(0)); 
+	ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(0));
 
 	// Zigbee will take it from here. Put this thread to sleep forever
 	//
@@ -405,7 +414,7 @@ static void configure_gpio(void)
 		return;
 	}
 
-	err = gpio_pin_configure_dt(&blue_led, GPIO_OUTPUT_ACTIVE);
+	err = gpio_pin_configure_dt(&blue_led, GPIO_OUTPUT_INACTIVE);
 	if (err != 0)
 	{
 		LOG_ERR("Cannot configure Blue LED (err: %d)", err);
@@ -425,40 +434,33 @@ static void configure_gpio(void)
 		return;
 	}
 
+	// Switch the battery sink on. Leave it on for the duration.
+	// This is the recommended practice with a battery attached to prevent burning out the ADC.
+	//
 	err = gpio_pin_configure_dt(&battery_divider_sink, GPIO_OUTPUT_ACTIVE);
-
 	if (err != 0)
 	{
 		LOG_ERR("Configuring Battery Divider Sink pin failed (err: %d)", err);
 		return;
 	}
-
-	gpio_pin_set_dt(&battery_divider_sink, 1);
 }
 
 static void toggle_identify_led(zb_bufid_t bufid)
 {
-	gpio_pin_toggle_dt(&blue_led);
-	ZB_SCHEDULE_APP_ALARM(toggle_identify_led, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(100));
-}
+	LOG_DBG("toggle_identify_led()");
+	
+	int rc = gpio_pin_toggle_dt(&blue_led);
 
-/* Invoked by ZBOSS. This will be called again with no buffer to turn off the identify mode */
-static void identify_cb(zb_bufid_t bufid)
-{
-	zb_ret_t zb_err_code;
-
-	if (bufid)
+	if(rc != 0) 
 	{
-		ZB_SCHEDULE_APP_CALLBACK(toggle_identify_led, bufid);
+		LOG_ERR("Could not toggle the identify LED: %d", rc);
 	}
-	else
-	{
-		zb_err_code = ZB_SCHEDULE_APP_ALARM_CANCEL(toggle_identify_led, ZB_ALARM_ANY_PARAM);
-		ZVUNUSED(zb_err_code);
 
-		// Ensure the LED is turned off when idenify is done.
-		//
-		gpio_pin_set_dt(&blue_led, 0);
+	zb_ret_t zb_err_code = ZB_SCHEDULE_APP_ALARM(toggle_identify_led, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(IDENTIFY_LED_BLINK_MSEC));
+
+	if (zb_err_code != RET_OK)
+	{
+		LOG_ERR("Could not schedule identify alarm");
 	}
 }
 
@@ -502,6 +504,35 @@ static void start_identifying(zb_bufid_t bufid)
 	}
 }
 
+/* Invoked by ZBOSS. This will be called again with no buffer to turn off the identify mode */
+static void identify_cb(zb_bufid_t bufid)
+{
+	zb_ret_t zb_err_code;
+
+	if (bufid)
+	{
+		LOG_INF("identication started!");
+
+		zb_err_code = ZB_SCHEDULE_APP_CALLBACK(toggle_identify_led, bufid);
+
+		if (zb_err_code != RET_OK)
+		{
+			LOG_ERR("Could not set identify callback");
+		}
+	}
+	else
+	{
+		LOG_INF("identication finished!");
+
+		zb_err_code = ZB_SCHEDULE_APP_ALARM_CANCEL(toggle_identify_led, ZB_ALARM_ANY_PARAM);
+		ZVUNUSED(zb_err_code);
+
+		// Ensure the LED is turned off when identification is finished.
+		//
+		gpio_pin_set_dt(&blue_led, GPIO_OUTPUT_INACTIVE);
+	}
+}
+
 void zboss_signal_handler(zb_uint8_t param)
 {
 	zb_zdo_app_signal_hdr_t *sig_hndler = NULL;
@@ -521,21 +552,16 @@ void zboss_signal_handler(zb_uint8_t param)
 
 		// Ensure the LED is turned off
 		//
-		gpio_pin_set_dt(&blue_led, 0);
+		gpio_pin_set_dt(&blue_led, GPIO_OUTPUT_INACTIVE);
 
 		// Call the app loop
 		//
-		ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(APP_LOOP_INTERVAL_SEC * 1000));	
+		ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(APP_LOOP_INTERVAL_SEC * 1000));
 	}
 	break;
 	case ZB_DEVICE_LEFT:
 	{
 		LOG_INF("Device has left the network");
-
-		// We have been cut loose. Blink the light
-		//
-
-		// ZB_SCHEDULE_APP_CALLBACK(slowly_toggle_identify_led, ZB_ALARM_ANY_PARAM);
 	}
 	break;
 	case ZB_COMMON_SIGNAL_CAN_SLEEP:
@@ -657,7 +683,7 @@ uint8_t get_battery_percentage(unsigned int batt_mV, const struct battery_level_
 	return pb->lvl_percentage + ((pa->lvl_percentage - pb->lvl_percentage) * (batt_mV - pb->lvl_mV) / (pa->lvl_mV - pb->lvl_mV));
 }
 
-static void read_battery()
+static int read_battery()
 {
 	int err = adc_sequence_init_dt(&adc_channels[BATTERY_ADC_CHANNEL], &battery_sequence);
 
@@ -700,10 +726,13 @@ static void read_battery()
 	if (status != ZB_ZCL_STATUS_SUCCESS)
 	{
 		LOG_ERR("Failed to write to Battery Percentage Remaining Attribute");
+		return -1;
 	}
+
+	return 0;
 }
 
-static void read_temperatures()
+static int read_temperatures()
 {
 	// Switch on the power pin.
 	//
@@ -732,6 +761,7 @@ static void read_temperatures()
 	if (status1 != ZB_ZCL_STATUS_SUCCESS)
 	{
 		LOG_ERR("Failed to write to Endpoint 1 Attribute");
+		return -1;
 	}
 
 	int16_t temperature_attribute_2 = (int16_t)(temperature_2 * ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER);
@@ -746,5 +776,8 @@ static void read_temperatures()
 	if (status2 != ZB_ZCL_STATUS_SUCCESS)
 	{
 		LOG_ERR("Failed to write to Endpoint 2 Attribute");
+		return -1;
 	}
+
+	return 0;
 }
