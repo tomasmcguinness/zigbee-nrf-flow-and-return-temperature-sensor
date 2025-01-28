@@ -230,8 +230,6 @@ static void app_loop(zb_bufid_t bufid)
 {
 	ZVUNUSED(bufid);
 
-	ZB_SCHEDULE_APP_ALARM_CANCEL(app_loop, ZB_ALARM_ANY_PARAM);
-
 	LOG_INF("APP_LOOP");
 
 	int rc;
@@ -449,12 +447,7 @@ static void toggle_identify_led(zb_bufid_t bufid)
 {
 	LOG_DBG("toggle_identify_led()");
 	
-	int rc = gpio_pin_toggle_dt(&blue_led);
-
-	if(rc != 0) 
-	{
-		LOG_ERR("Could not toggle the identify LED: %d", rc);
-	}
+	gpio_pin_toggle_dt(&blue_led);
 
 	zb_ret_t zb_err_code = ZB_SCHEDULE_APP_ALARM(toggle_identify_led, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(IDENTIFY_LED_BLINK_MSEC));
 
@@ -524,6 +517,8 @@ static void identify_cb(zb_bufid_t bufid)
 	{
 		LOG_INF("identication finished!");
 
+		// There might be a pending alarm, so be cancel it.
+		//
 		zb_err_code = ZB_SCHEDULE_APP_ALARM_CANCEL(toggle_identify_led, ZB_ALARM_ANY_PARAM);
 		ZVUNUSED(zb_err_code);
 

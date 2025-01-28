@@ -1441,22 +1441,10 @@
 		)
 	)
 	(junction
-		(at 151.13 71.12)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "1b8e7bf3-0483-427b-8caf-511ee9e185b3")
-	)
-	(junction
 		(at 64.77 111.76)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "9b87428b-720a-4a7b-a932-e8f5136451b3")
-	)
-	(junction
-		(at 148.59 71.12)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "aece769d-953a-47b6-a8c6-b4c5e74d5b8c")
 	)
 	(junction
 		(at 88.9 113.03)
@@ -1471,6 +1459,10 @@
 	(no_connect
 		(at 148.59 71.12)
 		(uuid "5d46c138-6404-47a8-91ec-ebf36ae77c36")
+	)
+	(no_connect
+		(at 171.45 81.28)
+		(uuid "6815bae4-00a3-48e4-8d1b-d40fcd49315c")
 	)
 	(no_connect
 		(at 128.27 93.98)
@@ -1622,16 +1614,6 @@
 	)
 	(wire
 		(pts
-			(xy 151.13 71.12) (xy 153.67 71.12)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "862c15d4-a4a1-46b3-a241-09666b41076b")
-	)
-	(wire
-		(pts
 			(xy 171.45 91.44) (xy 184.15 91.44)
 		)
 		(stroke
@@ -1639,16 +1621,6 @@
 			(type default)
 		)
 		(uuid "88535498-f10d-43a6-9108-f350bc1b6df4")
-	)
-	(wire
-		(pts
-			(xy 171.45 81.28) (xy 185.42 81.28)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8996f9e9-dd5f-45cc-ae84-b9a1c1be02e5")
 	)
 	(wire
 		(pts
@@ -1722,16 +1694,6 @@
 	)
 	(wire
 		(pts
-			(xy 148.59 71.12) (xy 151.13 71.12)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b5505607-75ca-491e-b0e2-041da2b31337")
-	)
-	(wire
-		(pts
 			(xy 66.04 87.63) (xy 68.58 87.63)
 		)
 		(stroke
@@ -1759,16 +1721,6 @@
 			(type default)
 		)
 		(uuid "f02697d2-7e06-423e-b7d2-97fe80ab529f")
-	)
-	(wire
-		(pts
-			(xy 146.05 71.12) (xy 148.59 71.12)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f86eec7c-4083-467b-aee7-c469ca120687")
 	)
 	(label "+3.3V"
 		(at 68.58 87.63 0)
@@ -2662,7 +2614,7 @@
 		(fields_autoplaced yes)
 		(uuid "aebfc4c4-da48-4a50-ac9b-44f9b9f5153e")
 		(property "Reference" "BATT1"
-			(at 151.13 113.03 90)
+			(at 151.13 112.3949 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2671,7 +2623,7 @@
 			)
 		)
 		(property "Value" "Conn_01x02_Pin"
-			(at 151.13 115.57 90)
+			(at 151.13 114.9349 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2679,7 +2631,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TerminalBlock_TE-Connectivity:TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal"
+		(property "Footprint" "Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal"
 			(at 149.86 113.03 0)
 			(effects
 				(font
@@ -2748,7 +2700,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TerminalBlock_TE-Connectivity:TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal"
+		(property "Footprint" "Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal"
 			(at 67.31 104.14 0)
 			(effects
 				(font
@@ -2817,7 +2769,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "TerminalBlock_TE-Connectivity:TerminalBlock_TE_282834-2_1x02_P2.54mm_Horizontal"
+		(property "Footprint" "Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal"
 			(at 91.44 104.14 0)
 			(effects
 				(font
@@ -2990,72 +2942,6 @@
 			(project "RadiatorBalancer"
 				(path "/9240e15d-484a-49b3-8f80-37d1a010783e"
 					(reference "R1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 185.42 81.28 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "ee3bc743-d9ff-4d28-b3e7-4455c4a6d79a")
-		(property "Reference" "#PWR010"
-			(at 185.42 87.63 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 185.42 86.36 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 185.42 81.28 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 185.42 81.28 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 185.42 81.28 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "f5883461-dddd-448e-9722-2b1642d56ff1")
-		)
-		(instances
-			(project "RadiatorBalancer"
-				(path "/9240e15d-484a-49b3-8f80-37d1a010783e"
-					(reference "#PWR010")
 					(unit 1)
 				)
 			)
