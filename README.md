@@ -140,10 +140,15 @@ Once powered up, you can add the device to your Zigbee network as you would any 
 
 # PCB
 
+Using KiCAD, I have designed a PCB for this code. It is a mix of SMD and throughhole mountings, so you can use a standard soldering iron
+
+![image](https://github.com/user-attachments/assets/e2cfd54f-a12c-4132-aea9-dcc158bcbb11)
+
+
 > [!CAUTION]
 > If you choose to use version 0.1 of the PCB, the reset button will not work. I've outline the reason here https://tomasmcguinness.com/2025/01/24/f-a-r-t-sensor-pcb-mistake/
 
-Using KiCAD, I have designed a PCB for this code. However, there are some flaws in it. I have included the first version for reference.
+All the external connections for NTC probes and battery are via JST connectors.
 
 If you are interested in buying a PCB, do let me know. If there is enough interest, I can place a bulk order.
 
