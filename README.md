@@ -149,7 +149,7 @@ If you are interested in buying a PCB, do let me know. If there is enough intere
 
 # Next Steps
 
-* [ ] Fix reset button PCB traces
+* [*] Fix reset button PCB traces
 * [ ] Use reset button to reverse probes i.e. swap readings
 * [ ] Confirm long-term reliability
 * [ ] Ensure battery life
