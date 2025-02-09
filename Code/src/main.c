@@ -29,13 +29,20 @@
 
 #include "flash.h"
 
+/* This storage_partition is defined by the standard Zephyr Overlay */
+#define NVS_PARTITION			storage_partition
+#define NVS_PARTITION_DEVICE	FIXED_PARTITION_DEVICE(NVS_PARTITION)
+#define NVS_PARTITION_OFFSET	FIXED_PARTITION_OFFSET(NVS_PARTITION)
+
 #define BLUE_LED_NODE DT_ALIAS(led2)
 #define TEMPERATURE_DIVIDER_POWER_NODE DT_NODELABEL(temperature_divider_power)
 #define ACTION_BUTTON_NODE DT_ALIAS(sw0)
 #define BATTERY_DIVIDER_SINK_NODE DT_NODELABEL(battery_divider_sink)
 
 #define APP_LOOP_INTERVAL_SEC 30
-#define IDENTIFY_LED_BLINK_MSEC 1000
+#define IDENTIFY_LED_BLINK_MSEC 100
+
+#define SWAP_PROBES_PROBE_TIME K_SECONDS(1)
 
 #define ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER 100
 
@@ -59,6 +66,16 @@
 static const struct adc_dt_spec adc_channels[] = {DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, DT_SPEC_AND_COMMA)};
 
 static const struct adc_dt_spec adc_channels[];
+
+struct swap_probes_context_t
+{
+	uint32_t button;
+	bool swap_done;
+	struct k_timer timer;
+};
+static struct swap_probes_context_t swap_probes_context;
+
+static bool probes_swapped = false;
 
 // TODO Move this to configuration, so they can be easily changed.
 //
@@ -145,6 +162,7 @@ static void button_handler(uint32_t button_state, uint32_t has_changed);
 static void toggle_identify_led(zb_bufid_t bufid);
 static int read_battery();
 static int read_temperatures();
+void check_swap_button(uint32_t button_state, uint32_t has_changed);
 
 ZB_ZCL_DECLARE_IDENTIFY_ATTRIB_LIST(
 	identify_attr_list,
@@ -236,12 +254,17 @@ static void app_loop(zb_bufid_t bufid)
 
 	if (ZB_JOINED())
 	{
-		LOG_INF("Updating sensor values");
+		LOG_INF("Updating sensor values...");
 
 		rc = read_temperatures();
 		rc = read_battery();
 
 		rc = ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(APP_LOOP_INTERVAL_SEC * 1000));
+
+		if (rc != RET_OK)
+		{
+			LOG_ERR("Failed to schedule app_loop");
+		}
 	}
 	else
 	{
@@ -251,12 +274,17 @@ static void app_loop(zb_bufid_t bufid)
 		//
 		rc = gpio_pin_toggle_dt(&blue_led);
 
-		if(rc != 0) 
+		if (rc != RET_OK)
 		{
 			LOG_ERR("Failed to toggle identify LED");
 		}
 
 		rc = ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(1000));
+
+		if (rc != RET_OK)
+		{
+			LOG_ERR("Failed to schedule app_loop");
+		}
 	}
 }
 
@@ -275,8 +303,9 @@ int main(void)
 
 	configure_gpio();
 
-	// WTF does "1" represent? It's the button's "state" value. The mask?
+	// WTF does "4" represent? It's the button's "state" value. The mask?
 	//
+	register_swap_probes_button(4);
 	register_factory_reset_button(4);
 
 	zb_set_ed_timeout(ED_AGING_TIMEOUT_64MIN);
@@ -324,7 +353,7 @@ int main(void)
 
 	// Start the app loop.
 	//
-	ZB_SCHEDULE_APP_ALARM(app_loop, ZB_ALARM_ANY_PARAM, ZB_MILLISECONDS_TO_BEACON_INTERVAL(0));
+	ZB_SCHEDULE_APP_CALLBACK(app_loop, ZB_ALARM_ANY_PARAM);
 
 	// Zigbee will take it from here. Put this thread to sleep forever
 	//
@@ -335,9 +364,63 @@ int main(void)
 	}
 }
 
+void register_swap_probes_button(uint32_t button)
+{
+	swap_probes_context.button = button;
+	swap_probes_context.swap_done = false;
+
+	k_timer_init(&swap_probes_context.timer, swap_probes_timer_expired, NULL);
+}
+
+static void swap_probes()
+{
+	// TODO reverse the ADC channels
+}
+
+static void swap_probes_timer_expired(struct k_timer *timer_id)
+{
+	uint32_t button_state = 0;
+	uint32_t has_changed = 0;
+
+	dk_read_buttons(&button_state, &has_changed);
+
+	if (button_state & swap_probes_context.button)
+	{
+		LOG_DBG("FR button pressed for %d [s]", timer_id->status);
+		if (timer_id->status >= CONFIG_SWAP_PROBES_PRESS_TIME_SECONDS)
+		{
+			LOG_DBG("Schedule Swap Probes; stop timer; set factory_reset_done flag");
+			ZB_SCHEDULE_APP_CALLBACK(swap_probes, 0);
+			k_timer_stop(timer_id);
+			swap_probes_context.swap_done = true;
+		}
+	}
+	else
+	{
+		LOG_DBG("FR button released prematurely, swap cancelled");
+		k_timer_stop(timer_id);
+	}
+}
+
+void check_swap_probes_button(uint32_t button_state, uint32_t has_changed)
+{
+	if (button_state & has_changed & swap_probes_context.button)
+	{
+		LOG_INF("Clear factory_reset_done flag; start Factory Reset timer");
+
+		/* Reset flag indicating that Swap Probes was initiated */
+		factory_reset_context.swap_probes = false;
+
+		/* Start timer checking button press time */
+		k_timer_start(&swap_probes_context.timer, SWAP_PROBES_PROBE_TIME, SWAP_PROBES_PROBE_TIME);
+	}
+}
+
 static void button_handler(uint32_t button_state, uint32_t has_changed)
 {
 	LOG_INF("button_handler: %d", button_state);
+
+	check_swap_button(button_state, has_changed);
 
 	check_factory_reset_button(button_state, has_changed);
 
@@ -412,7 +495,7 @@ static void configure_gpio(void)
 		return;
 	}
 
-	err = gpio_pin_configure_dt(&blue_led, GPIO_OUTPUT_INACTIVE);
+	err = gpio_pin_configure_dt(&blue_led, GPIO_OUTPUT_HIGH);
 	if (err != 0)
 	{
 		LOG_ERR("Cannot configure Blue LED (err: %d)", err);
@@ -446,7 +529,7 @@ static void configure_gpio(void)
 static void toggle_identify_led(zb_bufid_t bufid)
 {
 	LOG_DBG("toggle_identify_led()");
-	
+
 	gpio_pin_toggle_dt(&blue_led);
 
 	zb_ret_t zb_err_code = ZB_SCHEDULE_APP_ALARM(toggle_identify_led, bufid, ZB_MILLISECONDS_TO_BEACON_INTERVAL(IDENTIFY_LED_BLINK_MSEC));
@@ -524,7 +607,7 @@ static void identify_cb(zb_bufid_t bufid)
 
 		// Ensure the LED is turned off when identification is finished.
 		//
-		gpio_pin_set_dt(&blue_led, GPIO_OUTPUT_INACTIVE);
+		gpio_pin_set_dt(&blue_led, 0);
 	}
 }
 
@@ -547,7 +630,7 @@ void zboss_signal_handler(zb_uint8_t param)
 
 		// Ensure the LED is turned off
 		//
-		gpio_pin_set_dt(&blue_led, GPIO_OUTPUT_INACTIVE);
+		gpio_pin_set_dt(&blue_led, 0);
 
 		// Call the app loop
 		//
@@ -600,10 +683,6 @@ struct adc_sequence battery_sequence = {
 //
 float mv_per_lsb = 3000.0F / 4096.0F;	   // 0.6 / (1/5) = 3
 float batt_mv_per_lsb = 3600.0F / 4096.0F; // 0.6 / (1/6) = 3.6
-
-// The battery voltage divider is 1mOhm vs 510kOhm
-//
-static const float battery_divider_factor = 1510.0 / 510.0;
 
 static uint16_t read_temperature(int i)
 {
@@ -678,6 +757,10 @@ uint8_t get_battery_percentage(unsigned int batt_mV, const struct battery_level_
 	return pb->lvl_percentage + ((pa->lvl_percentage - pb->lvl_percentage) * (batt_mV - pb->lvl_mV) / (pa->lvl_mV - pb->lvl_mV));
 }
 
+// The battery voltage divider is 1mOhm vs 510kOhm
+//
+static const float battery_divider_factor = 1510.0 / 510.0;
+
 static int read_battery()
 {
 	int err = adc_sequence_init_dt(&adc_channels[BATTERY_ADC_CHANNEL], &battery_sequence);
@@ -737,8 +820,19 @@ static int read_temperatures()
 	//
 	k_sleep(K_MSEC(100));
 
-	uint16_t temperature_1 = read_temperature(0);
-	uint16_t temperature_2 = read_temperature(1);
+	uint16_t temperature_1;
+	uint16_t temperature_2;
+
+	if (probes_swapped)
+	{
+		temperature_1 = read_temperature(1);
+		temperature_2 = read_temperature(0);
+	}
+	else
+	{
+		temperature_1 = read_temperature(0);
+		temperature_2 = read_temperature(1);
+	}
 
 	// Switch off the power pin.
 	//

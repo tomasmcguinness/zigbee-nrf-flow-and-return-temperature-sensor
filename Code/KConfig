@@ -7,6 +7,11 @@ menu "FART Sensor"
 config REFERENCE_VOLTAGE
 	int "The reference voltage"
 	range 3000 5000
-	default 0
+	default 3300
+
+config SWAP_PROBES_PRESS_TIME_SECONDS
+	int "The time the reset button must be pressed to swap the probes"
+	range 2 19
+	default 5
 
 endmenu
