@@ -8,7 +8,7 @@
 	gpio_custom {
 		compatible = "gpio-leds";
 		battery_divider_sink: battery_divider_sink {
-		  gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
+		  gpios = <&gpio0 27 GPIO_ACTIVE_LOW>;
 		  label = "Battery Divider Sink";
 		};
 	};
@@ -16,7 +16,7 @@
 	power {
 		compatible = "gpio-keys";
 		temperature_divider_power: temperature_divider_power {
-			gpios = <&gpio0 28 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+			gpios = <&gpio0 14 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
 			label = "Temperature Divider Power";
 		};
 	};
