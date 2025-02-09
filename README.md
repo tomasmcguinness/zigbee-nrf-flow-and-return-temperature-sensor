@@ -1,4 +1,4 @@
-# Zigbee F.A.R.T. Sensor (Flow and Return Temperature) on nRF62840
+# Zigbee F.A.R.T. Sensor (Flow and Return Temperature) on nRF52840
 
 <a href='https://ko-fi.com/G2G11TQK5' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://cdn.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
@@ -140,16 +140,21 @@ Once powered up, you can add the device to your Zigbee network as you would any 
 
 # PCB
 
+Using KiCAD, I have designed a PCB for this code. It is a mix of SMD and throughhole mountings, so you can use a standard soldering iron
+
+![image](https://github.com/user-attachments/assets/e2cfd54f-a12c-4132-aea9-dcc158bcbb11)
+
+
 > [!CAUTION]
 > If you choose to use version 0.1 of the PCB, the reset button will not work. I've outline the reason here https://tomasmcguinness.com/2025/01/24/f-a-r-t-sensor-pcb-mistake/
 
-Using KiCAD, I have designed a PCB for this code. However, there are some flaws in it. I have included the first version for reference.
+All the external connections for NTC probes and battery are via JST connectors.
 
 If you are interested in buying a PCB, do let me know. If there is enough interest, I can place a bulk order.
 
 # Next Steps
 
-* [ ] Fix reset button PCB traces
+* [x] ~~Fix reset button PCB traces~~
 * [ ] Use reset button to reverse probes i.e. swap readings
 * [ ] Confirm long-term reliability
 * [ ] Ensure battery life
