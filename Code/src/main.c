@@ -19,6 +19,9 @@
 #include <zb_nrf_platform.h>
 #include <zb_zcl_reporting.h>
 #include <zb_nrf_platform.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/storage/flash_map.h>
+#include <zephyr/fs/nvs.h>
 
 #include "ha/zb_ha_temperature_sensor.h"
 
@@ -29,10 +32,12 @@
 
 #include "flash.h"
 
+static struct nvs_fs fs;
+
 /* This storage_partition is defined by the standard Zephyr Overlay */
-#define NVS_PARTITION			storage_partition
-#define NVS_PARTITION_DEVICE	FIXED_PARTITION_DEVICE(NVS_PARTITION)
-#define NVS_PARTITION_OFFSET	FIXED_PARTITION_OFFSET(NVS_PARTITION)
+#define NVS_PARTITION storage_partition
+#define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(NVS_PARTITION)
+#define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(NVS_PARTITION)
 
 #define BLUE_LED_NODE DT_ALIAS(led2)
 #define TEMPERATURE_DIVIDER_POWER_NODE DT_NODELABEL(temperature_divider_power)
@@ -162,7 +167,8 @@ static void button_handler(uint32_t button_state, uint32_t has_changed);
 static void toggle_identify_led(zb_bufid_t bufid);
 static int read_battery();
 static int read_temperatures();
-void check_swap_button(uint32_t button_state, uint32_t has_changed);
+void check_swap_probes_button(uint32_t button_state, uint32_t has_changed);
+static void swap_probes_timer_expired(struct k_timer *timer_id);
 
 ZB_ZCL_DECLARE_IDENTIFY_ATTRIB_LIST(
 	identify_attr_list,
@@ -288,11 +294,60 @@ static void app_loop(zb_bufid_t bufid)
 	}
 }
 
+#define SWAP_PROBES_ID 1
+
 int main(void)
 {
-	LOG_INF("Starting Zigbee FART Sensor");
+	LOG_INF("Starting Zigbee F.A.R.T. Sensor");
 
 	int rc;
+
+	struct flash_pages_info info;
+
+	/* define the nvs file system by settings with:
+	 *	sector_size equal to the pagesize,
+	 *	3 sectors
+	 *	starting at NVS_PARTITION_OFFSET
+	 */
+	fs.flash_device = NVS_PARTITION_DEVICE;
+	if (!device_is_ready(fs.flash_device))
+	{
+		LOG_ERR("Flash device %s is not ready", fs.flash_device->name);
+		return 0;
+	}
+	fs.offset = NVS_PARTITION_OFFSET;
+	rc = flash_get_page_info_by_offs(fs.flash_device, fs.offset, &info);
+	if (rc)
+	{
+		LOG_ERR("Unable to get page info, rc=%d", rc);
+		return 0;
+	}
+	fs.sector_size = info.size;
+	fs.sector_count = 3U;
+
+	rc = nvs_mount(&fs);
+	if (rc)
+	{
+		LOG_ERR("Flash Init failed, rc=%d", rc);
+		return 0;
+	}
+
+	uint8_t buf[1];
+
+	rc = nvs_read(&fs, SWAP_PROBES_ID, &buf, sizeof(buf));
+
+	if (rc > 0)
+	{
+		LOG_INF("Swap Probes: %d", buf);
+		probes_swapped = buf[0];
+	}
+	else
+	{
+		buf[0] = 0x00;
+
+		LOG_INF("No Swap Probes configuration found. Setting initial value...");
+		(void)nvs_write(&fs, SWAP_PROBES_ID, &buf, sizeof(buf));
+	}
 
 	// Taken from https://forum.seeedstudio.com/t/low-power-with-xiao-nrf52840-on-zephyr-rtos/270491/5
 	// This turns off the QSPI flash and reduces power consumption.
@@ -372,9 +427,19 @@ void register_swap_probes_button(uint32_t button)
 	k_timer_init(&swap_probes_context.timer, swap_probes_timer_expired, NULL);
 }
 
-static void swap_probes()
+static void swap_probes(zb_bufid_t bufid)
 {
-	// TODO reverse the ADC channels
+	ZVUNUSED(bufid);
+
+	probes_swapped = !probes_swapped;
+
+	LOG_INF("Updating swap probes to %d", probes_swapped);
+
+	uint8_t buf[1];
+
+	buf[0] = probes_swapped;
+
+	(void)nvs_write(&fs, SWAP_PROBES_ID, &buf, sizeof(buf));
 }
 
 static void swap_probes_timer_expired(struct k_timer *timer_id)
@@ -387,9 +452,10 @@ static void swap_probes_timer_expired(struct k_timer *timer_id)
 	if (button_state & swap_probes_context.button)
 	{
 		LOG_DBG("FR button pressed for %d [s]", timer_id->status);
+
 		if (timer_id->status >= CONFIG_SWAP_PROBES_PRESS_TIME_SECONDS)
 		{
-			LOG_DBG("Schedule Swap Probes; stop timer; set factory_reset_done flag");
+			LOG_DBG("Schedule Swap Probes; stop timer; set swap_done flag");
 			ZB_SCHEDULE_APP_CALLBACK(swap_probes, 0);
 			k_timer_stop(timer_id);
 			swap_probes_context.swap_done = true;
@@ -406,10 +472,10 @@ void check_swap_probes_button(uint32_t button_state, uint32_t has_changed)
 {
 	if (button_state & has_changed & swap_probes_context.button)
 	{
-		LOG_INF("Clear factory_reset_done flag; start Factory Reset timer");
+		LOG_INF("Clear check_swap_probes_button flag; start Swap Probes timer");
 
 		/* Reset flag indicating that Swap Probes was initiated */
-		factory_reset_context.swap_probes = false;
+		swap_probes_context.swap_done = false;
 
 		/* Start timer checking button press time */
 		k_timer_start(&swap_probes_context.timer, SWAP_PROBES_PROBE_TIME, SWAP_PROBES_PROBE_TIME);
@@ -420,7 +486,7 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 {
 	LOG_INF("button_handler: %d", button_state);
 
-	check_swap_button(button_state, has_changed);
+	check_swap_probes_button(button_state, has_changed);
 
 	check_factory_reset_button(button_state, has_changed);
 
