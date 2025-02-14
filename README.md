@@ -155,6 +155,7 @@ If you are interested in buying a PCB, do let me know. If there is enough intere
 # Next Steps
 
 * [x] ~~Fix reset button PCB traces~~
-* [ ] Use reset button to reverse probes i.e. swap readings
+* [x] ~~Use reset button to reverse probes i.e. swap readings~~
+* [ ] Indicate when probes are swapped
 * [ ] Confirm long-term reliability
 * [ ] Ensure battery life
