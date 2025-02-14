@@ -169,6 +169,7 @@ static int read_battery();
 static int read_temperatures();
 void check_swap_probes_button(uint32_t button_state, uint32_t has_changed);
 static void swap_probes_timer_expired(struct k_timer *timer_id);
+static void register_swap_probes_button(uint8_t button);
 
 ZB_ZCL_DECLARE_IDENTIFY_ATTRIB_LIST(
 	identify_attr_list,
@@ -419,7 +420,7 @@ int main(void)
 	}
 }
 
-void register_swap_probes_button(uint32_t button)
+static void register_swap_probes_button(uint8_t button)
 {
 	swap_probes_context.button = button;
 	swap_probes_context.swap_done = false;
@@ -433,13 +434,16 @@ static void swap_probes(zb_bufid_t bufid)
 
 	probes_swapped = !probes_swapped;
 
-	LOG_INF("Updating swap probes to %d", probes_swapped);
+	LOG_INF("Updating swap probes to [%d]", probes_swapped);
 
 	uint8_t buf[1];
 
 	buf[0] = probes_swapped;
 
 	(void)nvs_write(&fs, SWAP_PROBES_ID, &buf, sizeof(buf));
+
+	// TODO Turn the light green or indicate the active probe??
+	// Red mean probe 1 is flow, green means probe 2 is flow?
 }
 
 static void swap_probes_timer_expired(struct k_timer *timer_id)
@@ -491,9 +495,6 @@ static void button_handler(uint32_t button_state, uint32_t has_changed)
 	check_factory_reset_button(button_state, has_changed);
 
 	user_input_indicate();
-
-	// Maybe turn the light green or indicate the active probe??
-	// Red mean probe 1 is flow, green means probe 2 is flow?
 }
 
 static void app_clusters_attr_init(void)
