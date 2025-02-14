@@ -39,7 +39,10 @@ static struct nvs_fs fs;
 #define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(NVS_PARTITION)
 #define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(NVS_PARTITION)
 
+#define RED_LED_NODE DT_ALIAS(led0)
+#define GREEN_LED_NODE DT_ALIAS(led1)
 #define BLUE_LED_NODE DT_ALIAS(led2)
+
 #define TEMPERATURE_DIVIDER_POWER_NODE DT_NODELABEL(temperature_divider_power)
 #define ACTION_BUTTON_NODE DT_ALIAS(sw0)
 #define BATTERY_DIVIDER_SINK_NODE DT_NODELABEL(battery_divider_sink)
@@ -89,6 +92,8 @@ static bool probes_swapped = false;
 #define BCOEFFICIENT 3977
 #define SERIESRESISTOR 10000
 
+static const struct gpio_dt_spec red_led = GPIO_DT_SPEC_GET(RED_LED_NODE, gpios);
+static const struct gpio_dt_spec green_led = GPIO_DT_SPEC_GET(GREEN_LED_NODE, gpios);
 static const struct gpio_dt_spec blue_led = GPIO_DT_SPEC_GET(BLUE_LED_NODE, gpios);
 static const struct gpio_dt_spec temperatures_divider_power = GPIO_DT_SPEC_GET(TEMPERATURE_DIVIDER_POWER_NODE, gpios);
 static const struct gpio_dt_spec battery_divider_sink = GPIO_DT_SPEC_GET(BATTERY_DIVIDER_SINK_NODE, gpios);
