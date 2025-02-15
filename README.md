@@ -1,7 +1,5 @@
 # Zigbee F.A.R.T. Sensor (Flow and Return Temperature) on nRF52840
 
-<a href='https://ko-fi.com/G2G11TQK5' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://cdn.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
-
 A Zigbee Sensor designed to monitor flow and return temperatures. The sensor provides two temperature sensor probes in a single unit. It can be used to monitor a boiler's flow and return temperatures or the different between the tails of a radiator.
 
 It uses two NTC Thermistors, which can be attached to the flow and return pipes on whatever you wish to measure; radiator tails, boiler flow and return, hot water cylinder. 
@@ -144,13 +142,18 @@ Using KiCAD, I have designed a PCB for this code. It is a mix of SMD and through
 
 ![image](https://github.com/user-attachments/assets/e2cfd54f-a12c-4132-aea9-dcc158bcbb11)
 
-
 > [!CAUTION]
 > If you choose to use version 0.1 of the PCB, the reset button will not work. I've outline the reason here https://tomasmcguinness.com/2025/01/24/f-a-r-t-sensor-pcb-mistake/
 
 All the external connections for NTC probes and battery are via JST connectors.
 
 If you are interested in buying a PCB, do let me know. If there is enough interest, I can place a bulk order.
+
+# Support
+
+If you want to support this project, please consider buying me a coffee!
+
+<a href='https://ko-fi.com/G2G11TQK5' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://cdn.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
 # Next Steps
 
