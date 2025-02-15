@@ -138,12 +138,29 @@ Once powered up, you can add the device to your Zigbee network as you would any 
 
 # PCB
 
-Using KiCAD, I have designed a PCB for this code. It is a mix of SMD and throughhole mountings, so you can use a standard soldering iron
+Using KiCAD, I have designed a PCB for this code. 
+
+## V2
+A mix of SMD and throughhole mountings, this revision fixes the traces for the reset button (issue in V1) and uses updated footprints for the JST connectors.
 
 ![image](https://github.com/user-attachments/assets/e2cfd54f-a12c-4132-aea9-dcc158bcbb11)
 
 > [!CAUTION]
-> If you choose to use version 0.1 of the PCB, the reset button will not work. I've outline the reason here https://tomasmcguinness.com/2025/01/24/f-a-r-t-sensor-pcb-mistake/
+> The battery connections on this PCB are just too difficult to make. I've tried on three different boards, but I've not managed to power the XIAO using the battery terminal.
+
+## V3
+To work around the battery terminal issue and make it easier to solder, V3 has switched to a socket mount for the XIAO board. I also hope to use pogo pins to make the battery connections.
+
+![image](https://github.com/user-attachments/assets/679a53f5-6a8d-4c4e-aa87-bf175cf8fa7b)
+
+> [!NOTE]
+> As of the 15th Feb 2025, I am waiting on the first fabricated versions of this board to verify the socket and pogo pin design will work. 
+
+## V4
+This is incomplete. The goal is to move to SMD mounting compleletely and introduce a CR2032 battery holder to make the unit complete. It's present in the PCB-V4 branch.
+
+> [!CAUTION]
+> V4 is a work in progress and not ready for use!
 
 All the external connections for NTC probes and battery are via JST connectors.
 
