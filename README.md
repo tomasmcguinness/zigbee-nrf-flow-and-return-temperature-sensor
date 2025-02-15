@@ -146,10 +146,10 @@ A mix of SMD and throughhole mountings, this revision fixes the traces for the r
 ![image](https://github.com/user-attachments/assets/e2cfd54f-a12c-4132-aea9-dcc158bcbb11)
 
 > [!CAUTION]
-> The battery connections on this PCB are just too difficult to make. I've tried on three different boards, but I've not managed to power the XIAO using the battery terminal.
+> The battery connections on this PCB are just very difficult to make. I've tried on three different boards, but I've not managed to power the XIAO using the battery terminal. If you had a finer soldering iron, you might have better luck.
 
 ## V3
-To work around the battery terminal issue and make it easier to solder, V3 has switched to a socket mount for the XIAO board. I also hope to use pogo pins to make the battery connections.
+To work around the battery terminal issue and make it easier to for amateurs like myself to solder, V3 has switched to a socket mount for the XIAO board. I also hope to use pogo pins to make the battery connections.
 
 ![image](https://github.com/user-attachments/assets/679a53f5-6a8d-4c4e-aa87-bf175cf8fa7b)
 
