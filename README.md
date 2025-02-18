@@ -1,6 +1,6 @@
-# Zigbee F.A.R.T. Sensor (Flow and Return Temperature) on nRF52840
+# Zigbee Flow and Return Temperature Sensor on nRF52840
 
-A Zigbee Sensor designed to monitor flow and return temperatures. The sensor provides two temperature sensor probes in a single unit. It can be used to monitor a boiler's flow and return temperatures or the different between the tails of a radiator.
+A Zigbee Sensor designed to monitor flow and return temperatures. The sensor provides two temperature sensor probes in a single unit. It can be used to monitor a boiler's flow and return temperatures or the difference between the tails of a radiator.
 
 It uses two NTC Thermistors, which can be attached to the flow and return pipes on whatever you wish to measure; radiator tails, boiler flow and return, hot water cylinder. 
 
