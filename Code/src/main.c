@@ -39,8 +39,8 @@ static struct nvs_fs fs;
 #define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(NVS_PARTITION)
 #define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(NVS_PARTITION)
 
-#define RED_LED_NODE DT_ALIAS(led0)
-#define GREEN_LED_NODE DT_ALIAS(led1)
+//#define RED_LED_NODE DT_ALIAS(led0)
+//#define GREEN_LED_NODE DT_ALIAS(led1)
 #define BLUE_LED_NODE DT_ALIAS(led2)
 
 #define TEMPERATURE_DIVIDER_POWER_NODE DT_NODELABEL(temperature_divider_power)
@@ -92,8 +92,8 @@ static bool probes_swapped = false;
 #define BCOEFFICIENT 3977
 #define SERIESRESISTOR 10000
 
-static const struct gpio_dt_spec red_led = GPIO_DT_SPEC_GET(RED_LED_NODE, gpios);
-static const struct gpio_dt_spec green_led = GPIO_DT_SPEC_GET(GREEN_LED_NODE, gpios);
+//static const struct gpio_dt_spec red_led = GPIO_DT_SPEC_GET(RED_LED_NODE, gpios);
+//static const struct gpio_dt_spec green_led = GPIO_DT_SPEC_GET(GREEN_LED_NODE, gpios);
 static const struct gpio_dt_spec blue_led = GPIO_DT_SPEC_GET(BLUE_LED_NODE, gpios);
 static const struct gpio_dt_spec temperatures_divider_power = GPIO_DT_SPEC_GET(TEMPERATURE_DIVIDER_POWER_NODE, gpios);
 static const struct gpio_dt_spec battery_divider_sink = GPIO_DT_SPEC_GET(BATTERY_DIVIDER_SINK_NODE, gpios);
@@ -344,7 +344,6 @@ int main(void)
 
 	if (rc > 0)
 	{
-		LOG_INF("Swap Probes: %d", buf);
 		probes_swapped = buf[0];
 	}
 	else
@@ -366,8 +365,8 @@ int main(void)
 
 	// WTF does "4" represent? It's the button's "state" value. The mask?
 	//
-	register_swap_probes_button(4);
-	register_factory_reset_button(4);
+	register_swap_probes_button(1);
+	register_factory_reset_button(1);
 
 	zb_set_ed_timeout(ED_AGING_TIMEOUT_64MIN);
 
@@ -479,6 +478,8 @@ static void swap_probes_timer_expired(struct k_timer *timer_id)
 
 void check_swap_probes_button(uint32_t button_state, uint32_t has_changed)
 {
+	LOG_INF("check_swap_probes_button()");
+
 	if (button_state & has_changed & swap_probes_context.button)
 	{
 		LOG_INF("Clear check_swap_probes_button flag; start Swap Probes timer");

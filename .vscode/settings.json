@@ -8,5 +8,6 @@
     "nrf-connect.topdir": "${nrf-connect.sdk:2.8.0}",
     "nrf-connect.debugging.bindings": {
         "${workspaceFolder}/build/Zigbee": "Launch Zigbee"
-    }
+    },
+    "idf.pythonInstallPath": "D:\\esp-idf\\tools\\idf-python\\3.11.2\\python.exe"
 }
