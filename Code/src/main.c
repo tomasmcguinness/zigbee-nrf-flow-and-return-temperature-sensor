@@ -251,6 +251,7 @@ static int disable_ds_1(const struct device *dev)
 	ARG_UNUSED(dev);
 
 	pm_policy_state_lock_get(PM_STATE_SOFT_OFF, PM_ALL_SUBSTATES);
+
 	return 0;
 }
 
@@ -363,8 +364,6 @@ int main(void)
 
 	configure_gpio();
 
-	// WTF does "4" represent? It's the button's "state" value. The mask?
-	//
 	register_swap_probes_button(1);
 	register_factory_reset_button(1);
 
@@ -613,47 +612,9 @@ static void toggle_identify_led(zb_bufid_t bufid)
 	}
 }
 
-static void start_identifying(zb_bufid_t bufid)
-{
-	LOG_INF("start_identifying() has been called!");
-
-	ZVUNUSED(bufid);
-
-	if (ZB_JOINED())
-	{
-		/* Check if endpoint is in identifying mode,
-		 * if not put desired endpoint in identifying mode.
-		 */
-		if (dev_ctx.identify_attr.identify_time == ZB_ZCL_IDENTIFY_IDENTIFY_TIME_DEFAULT_VALUE)
-		{
-			zb_ret_t zb_err_code = zb_bdb_finding_binding_target(PROBE_1_ENDPOINT);
-
-			if (zb_err_code == RET_OK)
-			{
-				LOG_INF("Enter identify mode");
-			}
-			else if (zb_err_code == RET_INVALID_STATE)
-			{
-				LOG_WRN("RET_INVALID_STATE - Cannot enter identify mode");
-			}
-			else
-			{
-				ZB_ERROR_CHECK(zb_err_code);
-			}
-		}
-		else
-		{
-			LOG_INF("Cancel identify mode");
-			zb_bdb_finding_binding_target_cancel();
-		}
-	}
-	else
-	{
-		LOG_WRN("Device not in a network - cannot enter identify mode");
-	}
-}
-
-/* Invoked by ZBOSS. This will be called again with no buffer to turn off the identify mode */
+/* 
+ * Invoked by ZBOSS. This will be called again with no buffer to turn off the identify mode 
+ */
 static void identify_cb(zb_bufid_t bufid)
 {
 	zb_ret_t zb_err_code;
