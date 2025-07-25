@@ -1,4 +1,4 @@
-/*
+	/*
  * SPDX-License-Identifier: Apache-2.0
  *
  * Copyright (c) 2022 Nordic Semiconductor ASA
@@ -16,7 +16,7 @@
 	power {
 		compatible = "gpio-keys";
 		temperature_divider_power: temperature_divider_power {
-			gpios = <&gpio0 14 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+			gpios = <&gpio1 14 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
 			label = "Temperature Divider Power";
 		};
 	};
