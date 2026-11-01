@@ -1,0 +1,40 @@
+# Static flash layout for the Seeed XIAO nRF52840 with the factory
+# Adafruit UF2 bootloader (MBR + S140 v7.3.0 SoftDevice at 0x0, bootloader at 0xF4000).
+# Without this, Partition Manager places zboss_nvram and nvs_storage on top of
+# the bootloader, which gets erased the first time Zigbee writes its NVRAM.
+
+mbr_softdevice:
+  address: 0x0
+  end_address: 0x27000
+  region: flash_primary
+  size: 0x27000
+
+app:
+  address: 0x27000
+  end_address: 0xe5000
+  region: flash_primary
+  size: 0xbe000
+
+zboss_nvram:
+  address: 0xe5000
+  end_address: 0xed000
+  region: flash_primary
+  size: 0x8000
+
+zboss_product_config:
+  address: 0xed000
+  end_address: 0xee000
+  region: flash_primary
+  size: 0x1000
+
+nvs_storage:
+  address: 0xee000
+  end_address: 0xf4000
+  region: flash_primary
+  size: 0x6000
+
+uf2_bootloader:
+  address: 0xf4000
+  end_address: 0x100000
+  region: flash_primary
+  size: 0xc000
